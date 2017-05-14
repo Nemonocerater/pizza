@@ -7,6 +7,8 @@
 </head>
 <body>
 
+<?php include("header.php"); ?>
+
 <?php
 
 require_once('pizza_db.php');

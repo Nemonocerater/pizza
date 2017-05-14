@@ -7,10 +7,13 @@
 </head>
 <body>
 
+<?php include("header.php"); ?>
+
 <?php
 
 require_once('pizza_db.php');
 
+$saveSuccessful = false;
 $description = "custom pizza";
 $size = 3;
 
@@ -25,13 +28,33 @@ $allToppings []= $cheese;
 $conn = getPizzaDbConnection();
 try {
 	$conn->begin_transaction();
-	$price = getPriceOfPizza($conn, $allToppings);
+	$toppingValues = getToppingsByIds($conn, $allToppings);
+	$price = getPriceOfPizza($conn, $toppingValues);
 	$pizzaId = savePizza($conn, $description, $allToppings, $price);
 	$orderId = saveOrder($conn, $pizzaId, $size, $price);
 	$conn->commit();
+	$saveSuccessful = true;
 } catch (Exception $e) {
 	$conn->rollback();
 	throw $e;
+}
+$conn->close();
+
+function getToppingsByIds($conn, $toppingIds) {
+	$toppingList = implode(',', $toppingIds);
+	$topping_sql = "SELECT topping_id, topping_desc, topping_price FROM p_toppings WHERE topping_id IN ($toppingList);";
+	$topping_return = $conn->query($topping_sql);
+
+	$toppingValues = [];
+	foreach ($topping_return as $topping) {
+		$id = $topping['topping_id'];
+		$toppingValues[$id] = [
+			"topping_id" => $id,
+			"topping_price" => floatval($topping['topping_price']),
+			"topping_desc" => $topping['topping_desc']
+		];
+	}
+	return $toppingValues;
 }
 
 function savePizza($conn, $description, $toppings, $price) {
@@ -50,13 +73,9 @@ function savePizza($conn, $description, $toppings, $price) {
 }
 
 function getPriceOfPizza($conn, $toppings) {
-	$toppingList = implode(',', $toppings);
-	$topping_prices_sql = "SELECT topping_desc, topping_price FROM p_toppings WHERE topping_id IN ($toppingList);";
-	$topping_prices = $conn->query($topping_prices_sql);
-
 	$total = 0;
-	foreach ($topping_prices as $topping_price) {
-		$price = floatval($topping_price['topping_price']);
+	foreach ($toppings as $topping) {
+		$price = $topping['topping_price'];
 		$total += $price;
 	}
 	return $total;
@@ -89,7 +108,32 @@ function saveOrder($conn, $pizzaId, $size, $price) {
 	return $orderId;
 }
 
+function getToppingDesc($id) {
+	global $toppingValues;
+	return $toppingValues[$id]['topping_desc'];
+}
+
 ?>
+
+<?php if ($saveSuccessful): ?>
+	<h2>Your order:</h2>
+	<h4>Price: <?php echo $price; ?></h4>
+	<p><strong>Cheese:</strong> <?php echo getToppingDesc($cheese); ?></p>
+	<p><strong>Sauce:</strong> <?php echo getToppingDesc($sauce); ?></p>
+	<p>
+		<strong>Toppings:</strong>
+		<ul>
+			<?php
+			foreach ($toppings as $topping) {
+				$desc = getToppingDesc($topping);
+				echo "<li>$desc</li>";
+			}
+			?>
+		</ul>
+	</p>
+<?php else: ?>
+	<p style="color: red;">Your order was not processed successfully.  Please try again in a few minutes.</p>
+<?php endif; ?>
 
 </body>
 </html>

@@ -7,6 +7,8 @@
 </head>
 <body>
 
+<?php include("header.php"); ?>
+
 <?php
 
 // Print out all of the orders here.

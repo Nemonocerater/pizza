@@ -7,6 +7,8 @@
 </head>
 <body>
 
+<?php include("header.php"); ?>
+
 <ul>
 	<li><a href="order.php">Order</a></li>
 	<li><a href="order_log.php">View Orders</a></li>
