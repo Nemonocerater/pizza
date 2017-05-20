@@ -30,8 +30,10 @@ try {
 	$conn->begin_transaction();
 	$toppingValues = getToppingsByIds($conn, $allToppings);
 	$price = getPriceOfPizza($conn, $toppingValues);
-	$pizzaId = savePizza($conn, $description, $allToppings, $price);
-	$orderId = saveOrder($conn, $pizzaId, $size, $price);
+	for ($i = 0; $i < 100000; $i++) {
+		$pizzaId = savePizza($conn, $description, $allToppings, $price);
+		$orderId = saveOrder($conn, $pizzaId, $size, $price);
+	}
 	$conn->commit();
 	$saveSuccessful = true;
 } catch (Exception $e) {
